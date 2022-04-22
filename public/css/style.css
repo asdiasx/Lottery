@@ -1,0 +1,75 @@
+* {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+body {
+  background-color: #fff;
+  font-family: 'Open Sans', sans-serif;
+}
+ul,
+ol,
+li {
+  list-style: none;
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+h1 {
+  text-align: center;
+}
+#dldBtn {
+  padding: 5px;
+  background-color: #ccc;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #000;
+  text-decoration: none;
+}
+table {
+  /* width: 100%; */
+  text-align: center;
+  margin: auto;
+  /* table-layout: fixed; */
+}
+table,
+th,
+td {
+  border: 1px solid black;
+  border-collapse: collapse;
+  padding: 2px 2px;
+}
+td {
+  width: 55px;
+  height: 40px;
+  overflow: hidden;
+  word-wrap: normal;
+}
+td.date {
+  font-size: 0.75rem;
+  color: #333;
+  width: fit-content;
+}
+td.draw_number {
+  font-weight: bold;
+}
+tr:nth-child(even) {
+  background-color: #ddd;
+}
+th {
+  background-color: #aaa;
+  height: 40px;
+  font-size: 0.75rem;
+}
+@media print {
+  #table {
+    page-break-after: always;
+    position: relative;
+    -webkit-region-break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+  }
+}
