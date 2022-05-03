@@ -1,5 +1,7 @@
 # Lottery
 
+You can test this app at [seek4k.com.br/lotomania](https://seek4k.com.br/lotomania)
+
 ## The motivation...
 
 This application was created to automate a report that used to be manually built by my father.
