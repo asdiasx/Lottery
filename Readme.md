@@ -1,35 +1,190 @@
-# Lottery
+# Lottery - Lotomania Results App
 
-You can test this app at [seek4k.com.br/lotomania](https://seek4k.com.br/lotomania)
+A Node.js web application that displays Brazilian Lotomania lottery results with real-time data synchronization and PDF export functionality.
 
-## The motivation...
+## Features
 
-This application was created to automate a report that used to be manually built by my father.
+- 📊 **Live Lottery Data** — Fetches latest Lotomania results from official Caixa API
+- 🗄️ **Local SQLite Database** — Stores draw history for fast access
+- 📄 **PDF Export** — Generate and download lottery results as PDF
+- 🔄 **Auto Sync** — Automatically syncs database with latest API data
+- 🎨 **Web Interface** — Clean EJS template-based UI with Express.js
+- 📱 **Responsive Design** — Works on desktop and mobile browsers
 
-He likes to play the lottery and created some “strategies” to plan the next game based on historical results.
+## Tech Stack
 
-To make things easier and practice some programming skills, I created this app...
+- **Runtime:** Node.js v20+
+- **Framework:** Express.js 4.x
+- **Database:** SQLite (better-sqlite3)
+- **HTTP Client:** Axios 1.16+
+- **Template Engine:** EJS 3.x
+- **PDF Generation:** Puppeteer 24.x
+- **Dev Tool:** Nodemon
 
-## Decisions and choices...
+## Installation
 
-It was developed in Nodejs as Javascript is my main language and is a good tool to solve this kind of problem.
+### Prerequisites
+- Node.js v20 or higher
+- npm
 
-I decided to include a remote Postgres DB for practicing and to create a history of the results (just in case we need to get some statistics in future).
+### Setup
 
-Also, I use an API that serves the results.
+```bash
+# Clone or navigate to project
+cd Lottery
 
-As access to the app will not be intensive, I decided to keep all access and sync with the database inside the route access. If it was not the case, I would put separate processes to run on a time basis (using Cron/PM2 on a server).
+# Install dependencies
+npm install
 
-Challenge...
+# Create environment file (optional)
+cp .env_sample .env
 
-The greatest challenge was to generate the PDF with some format changes (excluding the download "button" from print)... It took me some time to study and become familiar with Puppeteer.
+# Start development server
+npm start
+```
 
-I choose this package as it is very comprehensive and I could figure out other uses in the future (ex web scrap).
+The app will start on **http://localhost:3000**
 
-## Notes...
+## Usage
 
-No focus was dedicated to the design, maybe on a future version.
+### View Lottery Results
+```
+http://localhost:3000/lotomania
+```
+Displays the last 25 Lotomania draws with:
+- Draw number and date
+- Numbers grouped by quadrants (G1-G25)
+- Number of winning groups
 
-I learned a lot and had a lot of fun doing this!
+### Download PDF
+```
+http://localhost:3000/download
+```
+Generates and downloads a formatted PDF of the lottery results.
 
-Now, thinking about the next project...
+## Environment Variables
+
+Optional configuration in `.env`:
+
+```env
+# For production
+NODE_ENV=production
+APP_URL=https://your-domain.com
+
+# For development (default)
+NODE_ENV=development
+LOTTERY_API_TOKEN=your_api_token_here
+```
+
+**Note:** For the Caixa API, no token is required. The `LOTTERY_API_TOKEN` is optional for custom API endpoints.
+
+## Project Structure
+
+```
+Lottery/
+├── index.js              # Express server & routes
+├── db.js                 # SQLite database operations
+├── api.js                # Caixa API client
+├── helpers.js            # Sync & data processing utilities
+├── package.json          # Project dependencies
+├── lottery.db            # SQLite database (auto-created)
+├── public/               # Static files
+│   └── table.pdf         # Generated PDF
+└── views/
+    └── table.ejs         # Lottery results template
+```
+
+## API Integration
+
+The app fetches data from the **Caixa Lottery API**:
+- **Endpoint:** `https://servicebus2.caixa.gov.br/portaldeloterias/api/`
+- **Lottery Code:** `lotomania`
+- **Data:** Draw numbers, dates, winning numbers, prizes
+
+### Key API Functions
+
+**`apiGetDrawings(drawNumber)`**
+- Get results for a specific draw
+- Returns: Full draw data (numbers, prizes, dates)
+
+**`apiGetLastResult()`**
+- Get the latest draw number
+- Returns: Current draw number
+
+## Database Schema
+
+**Table: `lotomania`**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | INTEGER | Primary key |
+| `draw_number` | INTEGER | Unique draw identifier |
+| `draw_date` | TEXT | Draw date (DD/MM/YY) |
+| `number_of_groups` | INTEGER | Count of winning groups |
+| `drawing_tens` | TEXT | JSON of numbers grouped by quadrant |
+
+## Development
+
+### Run in Development Mode
+```bash
+npm start
+```
+Uses `nodemon` for auto-restart on file changes.
+
+### Database
+- SQLite database stores locally in `lottery.db`
+- Auto-creates schema on first run
+- Uses WAL (Write-Ahead Logging) for better concurrency
+
+### PDF Generation
+- Uses Puppeteer for headless Chrome rendering
+- **Development:** Renders from `http://localhost:3000/lotomania`
+- **Production:** Renders from configured `APP_URL`
+
+## Production Deployment
+
+### Environment Setup
+```env
+NODE_ENV=production
+APP_URL=https://your-production-url.com
+```
+
+### Database
+The SQLite database persists locally. For multi-instance deployments, consider:
+- Shared storage for `lottery.db`
+- Or migrate to PostgreSQL/MySQL
+
+### PDF Generation
+Puppeteer in production requires:
+- Chromium/Chrome installed
+- Or use `puppeteer-extra-plugin-stealth` for headless mode
+
+## Troubleshooting
+
+### Connection Refused (localhost:3000)
+- Check if port 3000 is available
+- Kill existing process: `lsof -ti:3000 | xargs kill -9`
+
+### PDF Download Fails
+- Ensure `./public/` directory exists
+- Check Puppeteer can access the `/lotomania` page
+- Verify `APP_URL` is correct in production
+
+### Database Errors
+- Delete `lottery.db` to reset
+- Check file permissions in project directory
+
+## Security Notes
+
+- ✅ No authentication required (public lottery data)
+- ✅ Dependencies kept up-to-date with security patches
+- ✅ Input validation on API parameters
+- ⚠️ PDF generation uses external network requests
+
+## License
+
+ISC
+
+## Author
+
+Adriano Dias

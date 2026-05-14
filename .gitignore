@@ -1,4 +1,29 @@
-node_modules
+# Dependencies
+node_modules/
+package-lock.json
+
+# Database
+lottery.db
+lottery.db-shm
+lottery.db-wal
+
+# Generated files
+public/table.pdf
+
+# Environment
 .env
-*.pdf
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

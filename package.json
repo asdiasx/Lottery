@@ -11,12 +11,12 @@
   "author": "Adriano Dias",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.24.0",
+    "axios": "^1.16.1",
+    "better-sqlite3": "^12.10.0",
     "dotenv": "^16.0.0",
     "ejs": "^3.0.2",
     "express": "^4.17.1",
-    "pg": "^8.7.1",
-    "puppeteer": "^13.5.2"
+    "puppeteer": "^24.43.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.14"

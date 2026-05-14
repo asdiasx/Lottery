@@ -12,15 +12,15 @@ const initialDbSync = async () => {
     ) {
       const resultFromApi = await apiGetDrawings(drawingNumber);
 
-      const { numero_concurso, data_concurso, dezenas } = resultFromApi;
+      const { numero, dataApuracao, listaDezenas } = resultFromApi;
 
-      const groups = calculateGroups(dezenas);
+      const groups = calculateGroups(listaDezenas);
       const numberOfGroups = groups.length;
-      const jsonOfGroups = createJsonOfGroups(dezenas);
+      const jsonOfGroups = createJsonOfGroups(listaDezenas);
 
       await insertDraw({
-        drawNumber: numero_concurso,
-        drawDate: data_concurso,
+        drawNumber: numero,
+        drawDate: dataApuracao,
         numberOfGroups: numberOfGroups,
         drawingTens: jsonOfGroups,
       });

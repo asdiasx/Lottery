@@ -1,56 +1,70 @@
-import dotenv from 'dotenv';
-dotenv.config();
-import pg from 'pg';
-const { Pool } = pg;
-async function connect() {
-  if (global.connection) return global.connection.connect();
+import Database from 'better-sqlite3';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-  const pool = new Pool({
-    connectionString: process.env.DB_CONNECTION_STRING,
-  });
+const dbDir = path.dirname(fileURLToPath(import.meta.url));
+const dbPath = path.join(dbDir, 'lottery.db');
 
-  global.connection = pool;
-  return pool.connect();
+let db;
+
+function getDb() {
+  if (!db) {
+    db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+    initializeSchema();
+  }
+  return db;
+}
+
+function initializeSchema() {
+  const db = getDb();
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS lotomania (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      draw_number INTEGER UNIQUE NOT NULL,
+      draw_date TEXT NOT NULL,
+      number_of_groups INTEGER NOT NULL,
+      drawing_tens TEXT NOT NULL
+    )
+  `);
 }
 
 async function selectDraws(quantity) {
-  const limitRows = quantity == undefined ? '' : `LIMIT ${quantity}`;
-  const client = await connect();
-  const res = await client.query(
-    `SELECT 
-    id, 
-    draw_number, 
-    to_char(draw_date, 'DD/MM/YY') as draw_date, 
-    number_of_groups, 
+  const db = getDb();
+  const limitClause = quantity ? `LIMIT ${parseInt(quantity, 10)}` : '';
+  const stmt = db.prepare(`
+    SELECT
+    id,
+    draw_number,
+    draw_date,
+    number_of_groups,
     drawing_tens
-    FROM lotomania ORDER BY draw_number DESC ${limitRows}`
-  );
-  client.release();
-  return res.rows;
+    FROM lotomania ORDER BY draw_number DESC ${limitClause}
+  `);
+  const rows = stmt.all();
+  return rows;
 }
 
 async function insertDraw(draw) {
-  const client = await connect();
-  const sql =
-    'INSERT INTO lotomania(draw_number,draw_date,number_of_groups,drawing_tens) VALUES ($1,$2,$3,$4);';
-  const values = [
+  const db = getDb();
+  const stmt = db.prepare(
+    'INSERT OR IGNORE INTO lotomania(draw_number, draw_date, number_of_groups, drawing_tens) VALUES (?, ?, ?, ?)'
+  );
+  return stmt.run(
     draw.drawNumber,
     draw.drawDate,
     draw.numberOfGroups,
-    draw.drawingTens,
-  ];
-  const res = await client.query(sql, values);
-  client.release();
-  return res;
+    draw.drawingTens
+  );
 }
 
 async function selectDbLastDraw() {
-  const client = await connect();
-  const res = await client.query(
+  const db = getDb();
+  const stmt = db.prepare(
     'SELECT draw_number FROM lotomania ORDER BY draw_number DESC LIMIT 1'
   );
-  client.release();
-  let numberOfLastDraw = res.rows[0]?.draw_number || 2205;
-  return numberOfLastDraw;
+  const result = stmt.get();
+  return result?.draw_number || 2205;
 }
+
 export { selectDraws, insertDraw, selectDbLastDraw };
