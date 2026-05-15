@@ -16,7 +16,7 @@ const baseUrl = isDev ? 'http://localhost:3000' : (process.env.APP_URL || 'https
 
 // route for ejs table
 app.get('/lotomania', async function (req, res) {
-await initialDbSync();
+try { await initialDbSync(); } catch (e) { console.error('Sync failed (serving cached data):', e.message); }
 
 // select last n drawings from db
 const drawings = await selectDraws(25);
@@ -33,7 +33,7 @@ res.render('table.ejs', { drawings: parsedDrawings });
 // route to generate pdf
 app.get('/download', async function (req, res) {
   try {
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const page = await browser.newPage();
 
     const url = isDev ? `${baseUrl}/lotomania` : `${baseUrl}/lotomania/`;
