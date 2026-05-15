@@ -64,19 +64,20 @@ Generates and downloads a formatted PDF of the lottery results.
 
 ## Environment Variables
 
-Optional configuration in `.env`:
+Copy `.env_sample` to `.env` and fill in the values:
 
 ```env
-# For production
+# Proxy to Caixa API (required — direct access is geo-blocked outside Brazil)
+PROXY_URL=https://your-proxy-domain.com
+PROXY_TOKEN=your_token_here
+
+# Lottery game code
+DEFAULT_LOTTERY_CODE=lotomania
+
+# Production
 NODE_ENV=production
 APP_URL=https://your-domain.com
-
-# For development (default)
-NODE_ENV=development
-LOTTERY_API_TOKEN=your_api_token_here
 ```
-
-**Note:** For the Caixa API, no token is required. The `LOTTERY_API_TOKEN` is optional for custom API endpoints.
 
 ## Project Structure
 
@@ -96,8 +97,10 @@ Lottery/
 
 ## API Integration
 
-The app fetches data from the **Caixa Lottery API**:
-- **Endpoint:** `https://servicebus2.caixa.gov.br/portaldeloterias/api/`
+The app fetches data from the **Caixa Lottery API** via a reverse proxy (direct access is geo-blocked outside Brazil):
+
+- **Proxy:** configured via `PROXY_URL` + `PROXY_TOKEN`
+- **Upstream:** `https://servicebus2.caixa.gov.br/portaldeloterias/api/`
 - **Lottery Code:** `lotomania`
 - **Data:** Draw numbers, dates, winning numbers, prizes
 
