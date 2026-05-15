@@ -155,9 +155,13 @@ The SQLite database persists locally. For multi-instance deployments, consider:
 - Or migrate to PostgreSQL/MySQL
 
 ### PDF Generation
-Puppeteer in production requires:
-- Chromium/Chrome installed
-- Or use `puppeteer-extra-plugin-stealth` for headless mode
+Puppeteer in production requires Chromium installed on the server. Run once after deploy:
+
+```bash
+make setup
+```
+
+This installs Node 20 via nvm and downloads Chrome for Puppeteer.
 
 ## Troubleshooting
 
