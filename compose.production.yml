@@ -1,0 +1,23 @@
+# Produção no VPS Locaweb: /opt/lottery/compose.yml (segredos em /opt/lottery/.env).
+name: lottery
+services:
+  app:
+    build: ./src
+    image: lottery-app:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      APP_URL: http://localhost:3000   # o Puppeteer abre a página dentro do próprio container
+    ports:
+      - "127.0.0.1:3002:3000"
+    volumes:
+      - data:/data                      # lottery.db
+    init: true                          # recolhe os processos-filhos do Chromium (evita zumbis)
+    shm_size: 256m                      # o Chromium precisa de /dev/shm maior
+    mem_limit: 600m                     # protege os outros sites se o Chromium crescer
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+volumes:
+  data:

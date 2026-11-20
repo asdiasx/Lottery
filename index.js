@@ -32,8 +32,9 @@ res.render('table.ejs', { drawings: parsedDrawings });
 
 // route to generate pdf
 app.get('/download', async function (req, res) {
+  let browser;
   try {
-    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const page = await browser.newPage();
 
     const url = isDev ? `${baseUrl}/lotomania` : `${baseUrl}/lotomania/`;
@@ -62,11 +63,13 @@ app.get('/download', async function (req, res) {
       printBackground: true,
     });
 
-    await browser.close();
     res.download('./public/table.pdf', `LotoMania_${fileDateSufix}.pdf`);
   } catch (error) {
     console.error('PDF generation error:', error.message);
     res.status(500).json({ error: 'Failed to generate PDF' });
+  } finally {
+    // Fecha o Chrome mesmo em caso de erro (antes ficavam processos órfãos).
+    if (browser) await browser.close().catch(() => {});
   }
 });
 

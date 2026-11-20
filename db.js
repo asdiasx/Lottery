@@ -2,7 +2,8 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const dbDir = path.dirname(fileURLToPath(import.meta.url));
+// DB_DIR permite guardar o banco num volume (Docker); padrão: pasta do projeto.
+const dbDir = process.env.DB_DIR || path.dirname(fileURLToPath(import.meta.url));
 const dbPath = path.join(dbDir, 'lottery.db');
 
 let db;

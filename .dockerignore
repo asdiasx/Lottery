@@ -1,0 +1,8 @@
+node_modules
+package-lock.json
+lottery.db*
+public/table.pdf
+.env*
+.git
+.claude
+*.log

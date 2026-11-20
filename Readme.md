@@ -67,9 +67,10 @@ Generates and downloads a formatted PDF of the lottery results.
 Copy `.env_sample` to `.env` and fill in the values:
 
 ```env
-# Proxy to Caixa API (required — direct access is geo-blocked outside Brazil)
-PROXY_URL=https://your-proxy-domain.com
-PROXY_TOKEN=your_token_here
+# Optional: proxy to the Caixa API, only needed when running OUTSIDE Brazil
+# (the API blocks foreign IPs). Without it, the API is called directly.
+# PROXY_URL=https://your-proxy-domain.com
+# PROXY_TOKEN=your_token_here
 
 # Lottery game code
 DEFAULT_LOTTERY_CODE=lotomania
@@ -97,10 +98,10 @@ Lottery/
 
 ## API Integration
 
-The app fetches data from the **Caixa Lottery API** via a reverse proxy (direct access is geo-blocked outside Brazil):
+The app fetches data **directly** from the **Caixa Lottery API**, since the server is in Brazil:
 
-- **Proxy:** configured via `PROXY_URL` + `PROXY_TOKEN`
-- **Upstream:** `https://servicebus2.caixa.gov.br/portaldeloterias/api/`
+- **Endpoint:** `https://servicebus2.caixa.gov.br/portaldeloterias/api/` (override with `CAIXA_API_URL`)
+- **Optional proxy:** set `PROXY_URL` + `PROXY_TOKEN` only when running outside Brazil, where the API blocks foreign IPs. The former `proxy.seek4k.com.br` was decommissioned on 2026-11-20.
 - **Lottery Code:** `lotomania`
 - **Data:** Draw numbers, dates, winning numbers, prizes
 
@@ -146,25 +147,21 @@ Uses `nodemon` for auto-restart on file changes.
 
 ## Production Deployment
 
-### Environment Setup
-```env
-NODE_ENV=production
-APP_URL=https://your-production-url.com
-```
-
-### Database
-The SQLite database persists locally. For multi-instance deployments, consider:
-- Shared storage for `lottery.db`
-- Or migrate to PostgreSQL/MySQL
-
-### PDF Generation
-Puppeteer in production requires Chromium installed on the server. Run once after deploy:
+Runs in **Docker** on the Locaweb VPS (Brazil, `root@191.252.192.196`) at **https://lottery.seek4k.com.br/lotomania**, behind the host nginx (container port bound to `127.0.0.1:3002`). It previously ran on a DigitalOcean droplet with nvm + pm2.
 
 ```bash
-make setup
+make deploy     # rsync source → build image on the server → docker compose up -d
+make rollback   # back to the previous image (lottery-app:previous)
+make logs       # follow container logs
+make env        # (re)create /opt/lottery/.env on the server (DEFAULT_LOTTERY_CODE)
 ```
 
-This installs Node 20 via nvm and downloads Chrome for Puppeteer.
+- **Image:** `Dockerfile`. Uses Debian's Chromium for Puppeteer (`PUPPETEER_EXECUTABLE_PATH`).
+- **Compose:** `compose.production.yml`. Settings: `init: true` (reaps Chromium child processes), `shm_size: 256m`, `mem_limit: 600m`.
+- **Database:** SQLite in the `lottery_data` volume (`DB_DIR=/data`).
+- **PDF generation:** Puppeteer loads `http://localhost:3000/lotomania/` inside the container (`APP_URL`).
+- **nginx vhost:** `deploy/nginx-lottery.conf`. The certificate comes from certbot (`--nginx` plugin).
+- **Server operations:** see `~/Documents/projetos-e-infra/infraestrutura/operacao.md`.
 
 ## Troubleshooting
 

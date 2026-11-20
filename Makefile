@@ -1,44 +1,29 @@
 -include .env
 export
 
-# Derivados de DEPLOY_TARGET (user@host:caminho)
-_DEPLOY_HOST = $(firstword $(subst :, ,$(DEPLOY_TARGET)))
-_DEPLOY_PATH = $(patsubst %/,%,$(word 2,$(subst :, ,$(DEPLOY_TARGET))))
-_BACKUP_PATH = $(_DEPLOY_PATH).bak
+# Servidor Locaweb (Docker). Antes rodava no droplet DigitalOcean com nvm + pm2 (ver histórico do git).
+DEPLOY_HOST ?= root@191.252.192.196
+DIR         := /opt/lottery
 
-setup:
-	@test -n "$(DEPLOY_TARGET)" || (echo "Erro: DEPLOY_TARGET não definido." && exit 1)
-	ssh $(_DEPLOY_HOST) "curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash && \
-		export NVM_DIR=\"\$$HOME/.nvm\" && \
-		. \"\$$NVM_DIR/nvm.sh\" && \
-		nvm install 20 && \
-		nvm alias default 20 && \
-		node -v && npm -v"
-	ssh $(_DEPLOY_HOST) "export NVM_DIR=\"\$$HOME/.nvm\" && . \"\$$NVM_DIR/nvm.sh\" && cd $(_DEPLOY_PATH) && npx puppeteer browsers install chrome"
-	@echo "→ Node 20 e Chrome instalados. Execute: make deploy"
+.PHONY: deploy rollback logs env
 
+## Envia o código, gera a imagem no servidor e reinicia
 deploy:
-	@test -n "$(DEPLOY_TARGET)" || (echo "Erro: DEPLOY_TARGET não definido. Exemplo: make deploy DEPLOY_TARGET=user@host:~/node_projects/adriano/Lottery" && exit 1)
-	@echo "→ Backup: $(_DEPLOY_HOST):$(_BACKUP_PATH)"
-	ssh $(_DEPLOY_HOST) "[ -d $(_DEPLOY_PATH) ] && rsync -a --delete $(_DEPLOY_PATH)/ $(_BACKUP_PATH)/ || true"
-	rsync -avz --delete \
-		--exclude='.env' \
-		--exclude='node_modules/' \
-		--exclude='lottery.db' \
-		--exclude='lottery.db-shm' \
-		--exclude='lottery.db-wal' \
-		--exclude='public/table.pdf' \
-		--exclude='package-lock.json' \
-		--exclude='.DS_Store' \
-		. $(_DEPLOY_HOST):$(_DEPLOY_PATH)/
-	@echo "→ Instalando dependências e reiniciando serviço..."
-	ssh $(_DEPLOY_HOST) "export NVM_DIR=\"\$$HOME/.nvm\" && . \"\$$NVM_DIR/nvm.sh\" && cd $(_DEPLOY_PATH) && npm install --omit=dev && (pm2 restart lottery 2>/dev/null || pm2 start index.js --name lottery)"
-	@echo "→ Deploy concluído. Rollback disponível com: make rollback"
+	ssh $(DEPLOY_HOST) "mkdir -p $(DIR)/src"
+	git ls-files -z --cached --others --exclude-standard | rsync -az --delete --from0 --files-from=- ./ $(DEPLOY_HOST):$(DIR)/src/
+	scp -q compose.production.yml $(DEPLOY_HOST):$(DIR)/compose.yml
+	@ssh $(DEPLOY_HOST) "test -f $(DIR)/.env" || $(MAKE) env
+	ssh $(DEPLOY_HOST) "cd $(DIR) && (docker image inspect lottery-app:latest >/dev/null 2>&1 && docker tag lottery-app:latest lottery-app:previous || true) && docker compose build app && docker compose up -d && docker image prune -f >/dev/null"
+	@echo "→ Deploy concluído. Rollback: make rollback"
 
+## Cria /opt/lottery/.env no servidor. A API da Caixa é chamada direto (servidor no Brasil); proxy não é usado.
+env:
+	@printf 'DEFAULT_LOTTERY_CODE=%s\n' "$(or $(DEFAULT_LOTTERY_CODE),lotomania)" | ssh $(DEPLOY_HOST) "umask 077 && cat > $(DIR)/.env"
+	@echo "→ .env criado no servidor"
 
+## Volta para a imagem anterior
 rollback:
-	@test -n "$(DEPLOY_TARGET)" || (echo "Erro: DEPLOY_TARGET não definido." && exit 1)
-	ssh $(_DEPLOY_HOST) "[ -d $(_BACKUP_PATH) ] || (echo 'Erro: nenhum backup disponível em $(_BACKUP_PATH)' && exit 1)"
-	@echo "→ Restaurando $(_BACKUP_PATH) → $(_DEPLOY_PATH)"
-	ssh $(_DEPLOY_HOST) "export NVM_DIR=\"\$$HOME/.nvm\" && . \"\$$NVM_DIR/nvm.sh\" && rsync -a --delete $(_BACKUP_PATH)/ $(_DEPLOY_PATH)/ && (pm2 restart lottery 2>/dev/null || true)"
-	@echo "→ Rollback concluído."
+	ssh $(DEPLOY_HOST) "cd $(DIR) && docker tag lottery-app:previous lottery-app:latest && docker compose up -d --no-build app"
+
+logs:
+	ssh $(DEPLOY_HOST) "cd $(DIR) && docker compose logs --tail=100 -f app"
