@@ -26,4 +26,4 @@ rollback:
 	ssh $(DEPLOY_HOST) "cd $(DIR) && docker tag lottery-app:previous lottery-app:latest && docker compose up -d --no-build app"
 
 logs:
-	ssh $(DEPLOY_HOST) "cd $(DIR) && docker compose logs --tail=100 -f app"
+	ssh $(DEPLOY_HOST) "journalctl -t lottery-app -n 100 -f -o cat"

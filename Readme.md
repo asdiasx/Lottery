@@ -152,7 +152,7 @@ Runs in **Docker** on the Locaweb VPS (Brazil, `root@191.252.192.196`) at **http
 ```bash
 make deploy     # rsync source → build image on the server → docker compose up -d
 make rollback   # back to the previous image (lottery-app:previous)
-make logs       # follow container logs
+make logs       # follow container logs (journald: journalctl -t lottery-app on the server)
 make env        # (re)create /opt/lottery/.env on the server (DEFAULT_LOTTERY_CODE)
 ```
 
