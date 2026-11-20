@@ -13,6 +13,12 @@ services:
       - "127.0.0.1:3002:3000"
     volumes:
       - data:/data                      # lottery.db
+    healthcheck:                        # GET /up (não chama a API da Caixa)
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/up').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     init: true                          # recolhe os processos-filhos do Chromium (evita zumbis)
     shm_size: 256m                      # o Chromium precisa de /dev/shm maior
     mem_limit: 600m                     # protege os outros sites se o Chromium crescer

@@ -14,6 +14,8 @@ deploy:
 	scp -q compose.production.yml $(DEPLOY_HOST):$(DIR)/compose.yml
 	@ssh $(DEPLOY_HOST) "test -f $(DIR)/.env" || $(MAKE) env
 	ssh $(DEPLOY_HOST) "cd $(DIR) && (docker image inspect lottery-app:latest >/dev/null 2>&1 && docker tag lottery-app:latest lottery-app:previous || true) && docker compose build app && docker compose up -d && docker image prune -f >/dev/null"
+	@echo "→ Aguardando o app responder em /up"
+	@for i in $$(seq 1 30); do ssh $(DEPLOY_HOST) "curl -fs http://127.0.0.1:3002/up >/dev/null" && echo "✓ App no ar" && exit 0; sleep 2; done; echo "✗ App não respondeu em /up. Logs: make logs"; exit 1
 	@echo "→ Deploy concluído. Rollback: make rollback"
 
 ## Cria /opt/lottery/.env no servidor. A API da Caixa é chamada direto (servidor no Brasil); proxy não é usado.

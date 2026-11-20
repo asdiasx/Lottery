@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { selectDraws } from './db.js';
+import { selectDraws, selectDbLastDraw } from './db.js';
 
 import { initialDbSync } from './helpers.js';
 import puppeteer from 'puppeteer';
@@ -16,6 +16,18 @@ const isDev = process.env.NODE_ENV !== 'production';
 const baseUrl = isDev ? 'http://localhost:3000' : (process.env.APP_URL || 'https://seek4k.com.br');
 
 // route for ejs table
+// Health check: responde na hora, SEM chamar a API da Caixa; só confere que o banco abre.
+// Usado pelo Docker, pelo `make deploy` e pelo monitor de disponibilidade (UptimeRobot).
+app.get('/up', async function (req, res) {
+  try {
+    await selectDbLastDraw();
+    res.set('Cache-Control', 'no-store').type('text/plain').send('ok');
+  } catch (error) {
+    console.error('Health check failed:', error.message);
+    res.status(503).type('text/plain').send('unavailable');
+  }
+});
+
 app.get('/lotomania', async function (req, res) {
 try { await initialDbSync(); } catch (e) { console.error('Sync failed (serving cached data):', e.message); }
 
